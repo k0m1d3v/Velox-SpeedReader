@@ -1,0 +1,867 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Velox — lettura rapida</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,500;0,9..144,600;1,9..144,500&family=Inter:wght@400;500;600&family=Lora:ital,wght@0,400;0,600;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<style>
+  :root{
+    --bg: #EFEADC;
+    --surface: #E4DCC5;
+    --surface-2: #D9CFB2;
+    --ink: #262218;
+    --ink-soft: #6b654f;
+    --accent: #8B5E34;
+    --accent-contrast: #F7F3E6;
+    --focus: #2F6F5E;
+    --rule: rgba(38,34,24,0.16);
+    --stage-shadow: rgba(38,34,24,0.10);
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --bg: #16150F;
+      --surface: #1F1D15;
+      --surface-2: #2A271C;
+      --ink: #EDE7D8;
+      --ink-soft: #B4AD98;
+      --accent: #D3A46A;
+      --accent-contrast: #16150F;
+      --focus: #6BC1A8;
+      --rule: rgba(237,231,216,0.14);
+      --stage-shadow: rgba(0,0,0,0.35);
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg: #16150F;
+    --surface: #1F1D15;
+    --surface-2: #2A271C;
+    --ink: #EDE7D8;
+    --ink-soft: #B4AD98;
+    --accent: #D3A46A;
+    --accent-contrast: #16150F;
+    --focus: #6BC1A8;
+    --rule: rgba(237,231,216,0.14);
+    --stage-shadow: rgba(0,0,0,0.35);
+  }
+
+  *{ box-sizing: border-box; }
+  html,body{ height:100%; }
+  body{
+    margin:0;
+    background:var(--bg);
+    color:var(--ink);
+    font-family:'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    min-height:100vh;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    padding: clamp(16px, 4vw, 40px);
+  }
+
+  .shell{
+    width:100%;
+    max-width:760px;
+    display:flex;
+    flex-direction:column;
+    gap:18px;
+  }
+
+  header.top{
+    display:flex;
+    align-items:baseline;
+    justify-content:space-between;
+    gap:12px;
+    flex-wrap:wrap;
+  }
+  .brand{
+    font-family:'Fraunces', serif;
+    font-weight:600;
+    font-size: clamp(22px, 3vw, 28px);
+    letter-spacing: -0.01em;
+  }
+  .brand em{ font-style: italic; color: var(--accent); }
+  .tagline{
+    font-size:13px;
+    color:var(--ink-soft);
+    max-width: 320px;
+    text-align:right;
+    line-height:1.4;
+  }
+
+  .theme-toggle{
+    background:none;
+    border:1px solid var(--rule);
+    color:var(--ink-soft);
+    border-radius:20px;
+    padding:5px 12px;
+    font-size:12px;
+    font-family:'Inter',sans-serif;
+    cursor:pointer;
+  }
+  .theme-toggle:hover{ color:var(--ink); border-color:var(--ink-soft); }
+
+  /* ---------- Dropzone ---------- */
+  .dropzone{
+    border: 1.5px dashed var(--rule);
+    border-radius: 14px;
+    background: var(--surface);
+    padding: clamp(36px, 8vw, 64px) 24px;
+    text-align:center;
+    cursor:pointer;
+    transition: border-color .15s ease, background .15s ease;
+  }
+  .dropzone.drag{
+    border-color: var(--accent);
+    background: var(--surface-2);
+  }
+  .dropzone h2{
+    font-family:'Fraunces', serif;
+    font-weight:500;
+    font-size: clamp(20px, 3vw, 26px);
+    margin: 0 0 8px;
+  }
+  .dropzone p{
+    color:var(--ink-soft);
+    font-size:14px;
+    margin:0 0 18px;
+  }
+  .dropzone .pick-btn{
+    display:inline-block;
+    background:var(--accent);
+    color:var(--accent-contrast);
+    border:none;
+    border-radius:8px;
+    padding:10px 20px;
+    font-size:14px;
+    font-weight:600;
+    cursor:pointer;
+    font-family:'Inter',sans-serif;
+  }
+  .dropzone .formats{
+    margin-top:14px;
+    font-size:12px;
+    color:var(--ink-soft);
+  }
+  input[type=file]{ display:none; }
+
+  .status-line{
+    text-align:center;
+    color:var(--ink-soft);
+    font-size:14px;
+    padding: 20px 0;
+  }
+  .status-line.error{ color:#a3432e; }
+
+  /* ---------- Reader ---------- */
+  .reader{ display:none; flex-direction:column; gap:16px; }
+  .reader.active{ display:flex; }
+
+  .doc-info{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    font-size:13px;
+    color:var(--ink-soft);
+  }
+  .doc-info .doc-title{
+    color:var(--ink);
+    font-weight:600;
+    max-width: 60%;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    white-space:nowrap;
+  }
+  .change-file{
+    background:none;
+    border:none;
+    color:var(--focus);
+    cursor:pointer;
+    font-size:13px;
+    font-family:'Inter',sans-serif;
+    text-decoration:underline;
+    padding:0;
+  }
+
+  .stage{
+    position:relative;
+    background:var(--surface);
+    border-radius:16px;
+    box-shadow: 0 10px 30px var(--stage-shadow);
+    height: clamp(180px, 32vw, 260px);
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    overflow:hidden;
+  }
+  .pivot-guide{
+    position:absolute;
+    top:14px;
+    bottom:14px;
+    width:1px;
+    left:50%;
+    background: var(--rule);
+  }
+  .pivot-tick{
+    position:absolute;
+    left:50%;
+    width:5px;
+    height:5px;
+    border-radius:50%;
+    background:var(--accent);
+    transform:translateX(-50%);
+  }
+  .pivot-tick.top{ top:12px; }
+  .pivot-tick.bottom{ bottom:12px; }
+
+  .word-row{
+    display:flex;
+    align-items:baseline;
+    width:100%;
+    padding: 0 20px;
+    line-height:1;
+    white-space:nowrap;
+  }
+  .word-row.grouped{ justify-content:center; }
+  .pre{ flex:1; text-align:right; overflow:visible; }
+  .post{ flex:1; text-align:left; overflow:visible; }
+  .orp{ flex:none; color:var(--accent); padding:0 1px; }
+  .word-row, .pre, .post, .orp, .grouped-text{
+    font-size: var(--word-size, 48px);
+  }
+  .font-serif{ font-family:'Lora', serif; }
+  .font-sans{ font-family:'Inter', sans-serif; }
+  .font-mono{ font-family:'IBM Plex Mono', monospace; }
+
+  .empty-stage{
+    color:var(--ink-soft);
+    font-size:15px;
+    font-family:'Inter',sans-serif;
+  }
+
+  /* ---------- progress ---------- */
+  .progress-wrap{ display:flex; flex-direction:column; gap:6px; }
+  input[type=range].seek{
+    -webkit-appearance:none;
+    width:100%;
+    height:4px;
+    border-radius:2px;
+    background:var(--rule);
+    outline:none;
+  }
+  input[type=range].seek::-webkit-slider-thumb{
+    -webkit-appearance:none;
+    width:14px; height:14px;
+    border-radius:50%;
+    background:var(--accent);
+    cursor:pointer;
+    margin-top:-5px;
+  }
+  input[type=range].seek::-moz-range-thumb{
+    width:14px; height:14px; border:none;
+    border-radius:50%; background:var(--accent); cursor:pointer;
+  }
+  .time-row{
+    display:flex;
+    justify-content:space-between;
+    font-size:12px;
+    color:var(--ink-soft);
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* ---------- transport ---------- */
+  .transport{
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    gap:14px;
+  }
+  .transport button{
+    background:none;
+    border:none;
+    color:var(--ink);
+    cursor:pointer;
+    padding:6px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+  }
+  .transport button:hover{ color:var(--accent); }
+  .play-btn{
+    width:56px; height:56px;
+    border-radius:50%;
+    background:var(--accent) !important;
+    color:var(--accent-contrast) !important;
+  }
+  .play-btn svg{ width:22px; height:22px; }
+  .step-btn svg{ width:20px; height:20px; }
+
+  /* ---------- controls panel ---------- */
+  .controls{
+    background:var(--surface);
+    border-radius:14px;
+    padding:16px 18px;
+    display:grid;
+    grid-template-columns: 1fr 1fr;
+    gap:16px 22px;
+  }
+  @media (max-width:520px){ .controls{ grid-template-columns:1fr; } }
+  .control{ display:flex; flex-direction:column; gap:6px; }
+  .control label{
+    font-size:12px;
+    color:var(--ink-soft);
+    display:flex;
+    justify-content:space-between;
+  }
+  .control label span.val{ color:var(--ink); font-weight:600; }
+  input[type=range]{
+    -webkit-appearance:none;
+    width:100%;
+    height:4px;
+    border-radius:2px;
+    background:var(--rule);
+    outline:none;
+  }
+  input[type=range]::-webkit-slider-thumb{
+    -webkit-appearance:none;
+    width:14px; height:14px;
+    border-radius:50%;
+    background:var(--focus);
+    cursor:pointer;
+    margin-top:-5px;
+  }
+  input[type=range]::-moz-range-thumb{
+    width:14px; height:14px; border:none;
+    border-radius:50%; background:var(--focus); cursor:pointer;
+  }
+  select{
+    background:var(--surface-2);
+    color:var(--ink);
+    border:1px solid var(--rule);
+    border-radius:8px;
+    padding:7px 10px;
+    font-size:13px;
+    font-family:'Inter',sans-serif;
+  }
+  .seg{
+    display:flex;
+    border:1px solid var(--rule);
+    border-radius:8px;
+    overflow:hidden;
+  }
+  .seg button{
+    flex:1;
+    background:var(--surface-2);
+    border:none;
+    color:var(--ink-soft);
+    font-size:13px;
+    padding:7px 0;
+    cursor:pointer;
+    font-family:'Inter',sans-serif;
+  }
+  .seg button.on{
+    background:var(--focus);
+    color:var(--accent-contrast);
+  }
+
+  .hint{
+    text-align:center;
+    font-size:12px;
+    color:var(--ink-soft);
+  }
+  kbd{
+    background:var(--surface-2);
+    border-radius:4px;
+    padding:1px 6px;
+    font-family:'IBM Plex Mono',monospace;
+    font-size:11px;
+  }
+
+  :focus-visible{ outline:2px solid var(--focus); outline-offset:2px; }
+
+  @media (prefers-reduced-motion: reduce){
+    * { transition:none !important; }
+  }
+</style>
+</head>
+<body>
+<div class="shell">
+
+  <header class="top">
+    <div>
+      <div class="brand">Velo<em>x</em></div>
+    </div>
+    <div style="display:flex; align-items:center; gap:12px;">
+      <div class="tagline">Carica un PDF o un EPUB e leggilo una parola alla volta, alla tua velocità.</div>
+      <button class="theme-toggle" id="themeToggle" type="button">Tema</button>
+    </div>
+  </header>
+
+  <div class="dropzone" id="dropzone" tabindex="0" role="button" aria-label="Carica un file PDF o EPUB">
+    <h2>Trascina qui il tuo libro</h2>
+    <p>oppure scegli un file dal computer</p>
+    <button class="pick-btn" type="button" id="pickBtn">Scegli file</button>
+    <div class="formats">Formati supportati: PDF, EPUB — tutto avviene nel tuo browser, nulla viene caricato altrove</div>
+    <input type="file" id="fileInput" accept=".pdf,.epub">
+  </div>
+
+  <div class="status-line" id="statusLine" style="display:none;"></div>
+
+  <div class="reader" id="reader">
+    <div class="doc-info">
+      <div class="doc-title" id="docTitle">—</div>
+      <button class="change-file" id="changeFile" type="button">Cambia file</button>
+    </div>
+
+    <div class="stage" id="stage">
+      <div class="pivot-guide"></div>
+      <div class="pivot-tick top"></div>
+      <div class="pivot-tick bottom"></div>
+      <div class="word-row" id="wordRow">
+        <span class="empty-stage" id="emptyStage">Premi play per iniziare</span>
+      </div>
+    </div>
+
+    <div class="progress-wrap">
+      <input type="range" class="seek" id="seek" min="0" max="0" value="0" step="1" aria-label="Posizione nel testo">
+      <div class="time-row">
+        <span id="wordPos">0 / 0 parole</span>
+        <span id="timeLeft">--:--</span>
+      </div>
+    </div>
+
+    <div class="transport">
+      <button class="step-btn" id="back10" title="Indietro 15 parole" aria-label="Indietro">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 19 2 12 11 5 11 19"></polygon><polygon points="22 19 13 12 22 5 22 19"></polygon></svg>
+      </button>
+      <button class="play-btn" id="playBtn" title="Play / Pausa" aria-label="Play">
+        <svg id="playIcon" viewBox="0 0 24 24" fill="currentColor"><polygon points="6 3 20 12 6 21 6 3"></polygon></svg>
+        <svg id="pauseIcon" viewBox="0 0 24 24" fill="currentColor" style="display:none;"><rect x="5" y="3" width="5" height="18"></rect><rect x="14" y="3" width="5" height="18"></rect></svg>
+      </button>
+      <button class="step-btn" id="fwd10" title="Avanti 15 parole" aria-label="Avanti">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 19 22 12 13 5 13 19"></polygon><polygon points="2 19 11 12 2 5 2 19"></polygon></svg>
+      </button>
+    </div>
+
+    <div class="controls">
+      <div class="control">
+        <label>Velocità <span class="val" id="wpmVal">320 wpm</span></label>
+        <input type="range" id="wpmSlider" min="100" max="900" step="10" value="320">
+      </div>
+      <div class="control">
+        <label>Dimensione parola <span class="val" id="sizeVal">48px</span></label>
+        <input type="range" id="sizeSlider" min="28" max="96" step="2" value="48">
+      </div>
+      <div class="control">
+        <label>Font</label>
+        <select id="fontSelect">
+          <option value="font-serif" selected>Serif — Lora</option>
+          <option value="font-sans">Sans — Inter</option>
+          <option value="font-mono">Monospaziato — Plex Mono</option>
+        </select>
+      </div>
+      <div class="control">
+        <label>Parole per lampo</label>
+        <div class="seg" id="chunkSeg">
+          <button data-v="1" class="on" type="button">1</button>
+          <button data-v="2" type="button">2</button>
+          <button data-v="3" type="button">3</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="hint"><kbd>spazio</kbd> play/pausa · <kbd>←</kbd> <kbd>→</kbd> salta 15 parole · <kbd>↑</kbd> <kbd>↓</kbd> velocità</div>
+  </div>
+
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+
+  // ---------- persisted settings ----------
+  var settings = { wpm:320, size:48, font:"font-serif", chunk:1, theme:null };
+  try{
+    var saved = JSON.parse(localStorage.getItem("velox-settings") || "null");
+    if(saved) settings = Object.assign(settings, saved);
+  }catch(e){}
+
+  function saveSettings(){
+    try{ localStorage.setItem("velox-settings", JSON.stringify(settings)); }catch(e){}
+  }
+
+  if(settings.theme){ document.documentElement.setAttribute("data-theme", settings.theme); }
+
+  var themeToggle = document.getElementById("themeToggle");
+  themeToggle.addEventListener("click", function(){
+    var current = document.documentElement.getAttribute("data-theme");
+    var next = current === "dark" ? "light" : "dark";
+    document.documentElement.setAttribute("data-theme", next);
+    settings.theme = next;
+    saveSettings();
+  });
+
+  // ---------- elements ----------
+  var dropzone = document.getElementById("dropzone");
+  var fileInput = document.getElementById("fileInput");
+  var pickBtn = document.getElementById("pickBtn");
+  var statusLine = document.getElementById("statusLine");
+  var reader = document.getElementById("reader");
+  var docTitle = document.getElementById("docTitle");
+  var changeFile = document.getElementById("changeFile");
+  var wordRow = document.getElementById("wordRow");
+  var emptyStage = document.getElementById("emptyStage");
+  var seek = document.getElementById("seek");
+  var wordPos = document.getElementById("wordPos");
+  var timeLeft = document.getElementById("timeLeft");
+  var playBtn = document.getElementById("playBtn");
+  var playIcon = document.getElementById("playIcon");
+  var pauseIcon = document.getElementById("pauseIcon");
+  var back10 = document.getElementById("back10");
+  var fwd10 = document.getElementById("fwd10");
+  var wpmSlider = document.getElementById("wpmSlider");
+  var wpmVal = document.getElementById("wpmVal");
+  var sizeSlider = document.getElementById("sizeSlider");
+  var sizeVal = document.getElementById("sizeVal");
+  var fontSelect = document.getElementById("fontSelect");
+  var chunkSeg = document.getElementById("chunkSeg");
+  var stage = document.getElementById("stage");
+
+  pickBtn.addEventListener("click", function(){ fileInput.click(); });
+  dropzone.addEventListener("click", function(){ fileInput.click(); });
+  dropzone.addEventListener("keydown", function(e){ if(e.key==="Enter" || e.key===" "){ e.preventDefault(); fileInput.click(); } });
+
+  ["dragenter","dragover"].forEach(function(evt){
+    dropzone.addEventListener(evt, function(e){ e.preventDefault(); dropzone.classList.add("drag"); });
+  });
+  ["dragleave","drop"].forEach(function(evt){
+    dropzone.addEventListener(evt, function(e){ e.preventDefault(); dropzone.classList.remove("drag"); });
+  });
+  dropzone.addEventListener("drop", function(e){
+    var f = e.dataTransfer.files && e.dataTransfer.files[0];
+    if(f) handleFile(f);
+  });
+  fileInput.addEventListener("change", function(e){
+    var f = e.target.files && e.target.files[0];
+    if(f) handleFile(f);
+  });
+
+  changeFile.addEventListener("click", function(){
+    pause();
+    reader.classList.remove("active");
+    dropzone.style.display = "";
+    statusLine.style.display = "none";
+    fileInput.value = "";
+  });
+
+  function setStatus(msg, isError){
+    statusLine.style.display = "block";
+    statusLine.textContent = msg;
+    statusLine.classList.toggle("error", !!isError);
+  }
+
+  // ---------- file handling ----------
+  var words = [];
+  var idx = 0;
+  var playing = false;
+  var timerId = null;
+
+  function handleFile(file){
+    var name = file.name || "documento";
+    var lower = name.toLowerCase();
+    dropzone.style.display = "none";
+    setStatus("Sto leggendo \u201c" + name + "\u201d\u2026");
+
+    var reader2 = new FileReader();
+    reader2.onerror = function(){ setStatus("Non sono riuscito a leggere il file.", true); dropzone.style.display=""; };
+    reader2.onload = function(){
+      var buf = reader2.result;
+      if(lower.endsWith(".pdf")){
+        extractPdf(buf).then(function(text){ onTextReady(text, name); })
+          .catch(function(err){ console.error(err); setStatus("Errore durante l'estrazione del PDF.", true); dropzone.style.display=""; });
+      } else if(lower.endsWith(".epub")){
+        extractEpub(buf).then(function(text){ onTextReady(text, name); })
+          .catch(function(err){ console.error(err); setStatus("Errore durante l'estrazione dell'EPUB.", true); dropzone.style.display=""; });
+      } else {
+        setStatus("Formato non riconosciuto. Carica un file .pdf o .epub.", true);
+        dropzone.style.display = "";
+      }
+    };
+    reader2.readAsArrayBuffer(file);
+  }
+
+  function onTextReady(text, name){
+    var w = text.split(/\s+/).map(function(s){ return s.trim(); }).filter(Boolean);
+    if(w.length === 0){
+      setStatus("Non ho trovato testo leggibile in questo file.", true);
+      dropzone.style.display = "";
+      return;
+    }
+    words = w;
+    idx = 0;
+    docTitle.textContent = name;
+    statusLine.style.display = "none";
+    reader.classList.add("active");
+    seek.max = words.length - 1;
+    seek.value = 0;
+    updateWordDisplay();
+    updateProgress();
+  }
+
+  // ---------- PDF extraction ----------
+  function extractPdf(buf){
+    return pdfjsLib.getDocument({ data: buf }).promise.then(function(pdf){
+      var pageTexts = [];
+      var chain = Promise.resolve();
+      var n = pdf.numPages;
+      for(var i=1; i<=n; i++){
+        (function(pageNum){
+          chain = chain.then(function(){
+            setStatus("Estrazione testo\u2026 pagina " + pageNum + " di " + n);
+            return pdf.getPage(pageNum).then(function(page){
+              return page.getTextContent().then(function(content){
+                var strs = content.items.map(function(it){ return it.str; });
+                pageTexts.push(strs.join(" "));
+              });
+            });
+          });
+        })(i);
+      }
+      return chain.then(function(){ return pageTexts.join("\n\n"); });
+    });
+  }
+
+  // ---------- EPUB extraction ----------
+  function resolvePath(baseDir, relPath){
+    if(relPath.indexOf("/") === 0) return relPath.slice(1);
+    var parts = (baseDir ? baseDir.split("/") : []).concat(relPath.split("/"));
+    var out = [];
+    parts.forEach(function(p){
+      if(p === "" || p === "."){ return; }
+      if(p === ".."){ out.pop(); }
+      else out.push(p);
+    });
+    return out.join("/");
+  }
+
+  function extractEpub(buf){
+    return JSZip.loadAsync(buf).then(function(zip){
+      var containerFile = zip.file("META-INF/container.xml");
+      if(!containerFile) throw new Error("container.xml mancante");
+      return containerFile.async("text").then(function(containerXml){
+        var doc = new DOMParser().parseFromString(containerXml, "application/xml");
+        var rootfile = doc.getElementsByTagName("rootfile")[0];
+        var opfPath = rootfile.getAttribute("full-path");
+        var opfDir = opfPath.indexOf("/") >= 0 ? opfPath.slice(0, opfPath.lastIndexOf("/")) : "";
+        var opfFile = zip.file(opfPath);
+        if(!opfFile) throw new Error("file OPF mancante");
+        return opfFile.async("text").then(function(opfXml){
+          var opfDoc = new DOMParser().parseFromString(opfXml, "application/xml");
+          var manifestItems = {};
+          Array.prototype.forEach.call(opfDoc.getElementsByTagName("item"), function(item){
+            manifestItems[item.getAttribute("id")] = item.getAttribute("href");
+          });
+          var spineIds = Array.prototype.map.call(opfDoc.getElementsByTagName("itemref"), function(ir){
+            return ir.getAttribute("idref");
+          });
+          var chain = Promise.resolve();
+          var chapters = [];
+          spineIds.forEach(function(sid, i){
+            var href = manifestItems[sid];
+            if(!href) return;
+            var fullPath = resolvePath(opfDir, href);
+            chain = chain.then(function(){
+              setStatus("Estrazione testo\u2026 capitolo " + (i+1) + " di " + spineIds.length);
+              var f = zip.file(fullPath);
+              if(!f) return;
+              return f.async("text").then(function(html){
+                var hd = new DOMParser().parseFromString(html, "application/xhtml+xml");
+                var body = hd.body || hd.documentElement;
+                var txt = body ? (body.textContent || "") : "";
+                chapters.push(txt.replace(/\s+/g, " ").trim());
+              });
+            });
+          });
+          return chain.then(function(){ return chapters.join("\n\n"); });
+        });
+      });
+    });
+  }
+
+  // ---------- RSVP engine ----------
+  function orpIndex(len){
+    if(len <= 1) return 0;
+    if(len <= 4) return 1;
+    if(len <= 9) return 2;
+    if(len <= 13) return 3;
+    return 4;
+  }
+
+  function computeDelay(unitWords){
+    var base = 60000 / settings.wpm;
+    var joined = unitWords.join(" ");
+    var len = joined.length;
+    var mult = 1;
+    if(len > 6){ mult += Math.min((len - 6) * 0.045, 0.9); }
+    var lastChar = joined.charAt(joined.length - 1);
+    var extra = 0;
+    if(/[.!?]/.test(lastChar)) extra = base * 1.6;
+    else if(/[,;:]/.test(lastChar)) extra = base * 0.7;
+    return base * unitWords.length * mult + extra;
+  }
+
+  function currentUnit(){
+    var chunk = settings.chunk;
+    return words.slice(idx, idx + chunk);
+  }
+
+  function updateWordDisplay(){
+    var unit = currentUnit();
+    if(unit.length === 0){
+      wordRow.classList.remove("grouped");
+      wordRow.innerHTML = '<span class="empty-stage">Fine del testo</span>';
+      return;
+    }
+    wordRow.style.setProperty("--word-size", settings.size + "px");
+    if(settings.chunk === 1){
+      var w = unit[0];
+      var i = Math.min(orpIndex(w.length), w.length - 1);
+      var pre = w.slice(0, i);
+      var orp = w.slice(i, i+1);
+      var post = w.slice(i+1);
+      wordRow.classList.remove("grouped");
+      wordRow.innerHTML =
+        '<span class="pre ' + settings.font + '">' + escapeHtml(pre) + '</span>' +
+        '<span class="orp ' + settings.font + '">' + escapeHtml(orp) + '</span>' +
+        '<span class="post ' + settings.font + '">' + escapeHtml(post) + '</span>';
+    } else {
+      wordRow.classList.add("grouped");
+      wordRow.innerHTML = '<span class="grouped-text ' + settings.font + '">' + escapeHtml(unit.join(" ")) + '</span>';
+    }
+  }
+
+  function escapeHtml(s){
+    return s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+  }
+
+  function updateProgress(){
+    seek.value = idx;
+    wordPos.textContent = Math.min(idx+1, words.length) + " / " + words.length + " parole";
+    var remaining = words.length - idx;
+    var secs = (remaining / settings.wpm) * 60;
+    var m = Math.floor(secs / 60);
+    var s = Math.floor(secs % 60);
+    timeLeft.textContent = (m < 10 ? "0"+m : m) + ":" + (s < 10 ? "0"+s : s) + " rimanenti";
+  }
+
+  function scheduleNext(){
+    var unit = currentUnit();
+    if(unit.length === 0){ pause(); return; }
+    var delay = computeDelay(unit);
+    timerId = setTimeout(function(){
+      idx += settings.chunk;
+      if(idx >= words.length){
+        idx = words.length;
+        updateProgress();
+        updateWordDisplay();
+        pause();
+        return;
+      }
+      updateWordDisplay();
+      updateProgress();
+      scheduleNext();
+    }, delay);
+  }
+
+  function play(){
+    if(words.length === 0) return;
+    if(idx >= words.length) idx = 0;
+    playing = true;
+    playIcon.style.display = "none";
+    pauseIcon.style.display = "";
+    scheduleNext();
+  }
+  function pause(){
+    playing = false;
+    playIcon.style.display = "";
+    pauseIcon.style.display = "none";
+    if(timerId){ clearTimeout(timerId); timerId = null; }
+  }
+  function togglePlay(){ playing ? pause() : play(); }
+
+  playBtn.addEventListener("click", togglePlay);
+
+  back10.addEventListener("click", function(){
+    pause();
+    idx = Math.max(0, idx - 15);
+    updateWordDisplay(); updateProgress();
+  });
+  fwd10.addEventListener("click", function(){
+    pause();
+    idx = Math.min(words.length - 1, idx + 15);
+    updateWordDisplay(); updateProgress();
+  });
+
+  seek.addEventListener("input", function(){
+    pause();
+    idx = parseInt(seek.value, 10) || 0;
+    updateWordDisplay(); updateProgress();
+  });
+
+  wpmSlider.value = settings.wpm;
+  wpmVal.textContent = settings.wpm + " wpm";
+  wpmSlider.addEventListener("input", function(){
+    settings.wpm = parseInt(wpmSlider.value, 10);
+    wpmVal.textContent = settings.wpm + " wpm";
+    updateProgress();
+    saveSettings();
+  });
+
+  sizeSlider.value = settings.size;
+  sizeVal.textContent = settings.size + "px";
+  sizeSlider.addEventListener("input", function(){
+    settings.size = parseInt(sizeSlider.value, 10);
+    sizeVal.textContent = settings.size + "px";
+    updateWordDisplay();
+    saveSettings();
+  });
+
+  fontSelect.value = settings.font;
+  fontSelect.addEventListener("change", function(){
+    settings.font = fontSelect.value;
+    updateWordDisplay();
+    saveSettings();
+  });
+
+  Array.prototype.forEach.call(chunkSeg.querySelectorAll("button"), function(btn){
+    if(parseInt(btn.dataset.v,10) === settings.chunk) btn.classList.add("on"); else btn.classList.remove("on");
+    btn.addEventListener("click", function(){
+      Array.prototype.forEach.call(chunkSeg.querySelectorAll("button"), function(b){ b.classList.remove("on"); });
+      btn.classList.add("on");
+      settings.chunk = parseInt(btn.dataset.v, 10);
+      updateWordDisplay();
+      saveSettings();
+    });
+  });
+
+  document.addEventListener("keydown", function(e){
+    if(!reader.classList.contains("active")) return;
+    if(e.target.tagName === "SELECT" || e.target.tagName === "INPUT") return;
+    if(e.code === "Space"){ e.preventDefault(); togglePlay(); }
+    else if(e.code === "ArrowLeft"){ pause(); idx = Math.max(0, idx-15); updateWordDisplay(); updateProgress(); }
+    else if(e.code === "ArrowRight"){ pause(); idx = Math.min(words.length-1, idx+15); updateWordDisplay(); updateProgress(); }
+    else if(e.code === "ArrowUp"){ e.preventDefault(); settings.wpm = Math.min(900, settings.wpm+25); wpmSlider.value=settings.wpm; wpmVal.textContent=settings.wpm+" wpm"; updateProgress(); saveSettings(); }
+    else if(e.code === "ArrowDown"){ e.preventDefault(); settings.wpm = Math.max(100, settings.wpm-25); wpmSlider.value=settings.wpm; wpmVal.textContent=settings.wpm+" wpm"; updateProgress(); saveSettings(); }
+  });
+
+})();
+</script>
+</body>
+</html>
