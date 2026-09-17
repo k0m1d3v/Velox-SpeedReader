@@ -6,3 +6,6 @@ Text extraction happens entirely in the browser (pdf.js for PDFs, JSZip for EPUB
 Adjustable reading speed (100–900 wpm) with automatic pauses on punctuation
 Customizable font, text size, and number of words per flash
 No backend dependency: a single HTML file, works offline once downloaded
+
+
+Live at https://k0m1d3v.github.io/Velox-SpeedReader/
