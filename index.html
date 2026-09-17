@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="it">
+<html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Velox — lettura rapida</title>
+<title>Velox — speed reading</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,500;0,9..144,600;1,9..144,500&family=Inter:wght@400;500;600&family=Lora:ital,wght@0,400;0,600;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -397,16 +397,16 @@
       <div class="brand">Velo<em>x</em></div>
     </div>
     <div style="display:flex; align-items:center; gap:12px;">
-      <div class="tagline">Carica un PDF o un EPUB e leggilo una parola alla volta, alla tua velocità.</div>
-      <button class="theme-toggle" id="themeToggle" type="button">Tema</button>
+      <div class="tagline">Load a PDF or EPUB and read it one word at a time, at your own speed.</div>
+      <button class="theme-toggle" id="themeToggle" type="button">Theme</button>
     </div>
   </header>
 
-  <div class="dropzone" id="dropzone" tabindex="0" role="button" aria-label="Carica un file PDF o EPUB">
-    <h2>Trascina qui il tuo libro</h2>
-    <p>oppure scegli un file dal computer</p>
-    <button class="pick-btn" type="button" id="pickBtn">Scegli file</button>
-    <div class="formats">Formati supportati: PDF, EPUB — tutto avviene nel tuo browser, nulla viene caricato altrove</div>
+  <div class="dropzone" id="dropzone" tabindex="0" role="button" aria-label="Upload a PDF or EPUB file">
+    <h2>Drop your book here</h2>
+    <p>or choose a file from your computer</p>
+    <button class="pick-btn" type="button" id="pickBtn">Choose file</button>
+    <div class="formats">Supported formats: PDF, EPUB — everything happens in your browser, nothing is uploaded anywhere</div>
     <input type="file" id="fileInput" accept=".pdf,.epub">
   </div>
 
@@ -415,7 +415,7 @@
   <div class="reader" id="reader">
     <div class="doc-info">
       <div class="doc-title" id="docTitle">—</div>
-      <button class="change-file" id="changeFile" type="button">Cambia file</button>
+      <button class="change-file" id="changeFile" type="button">Change file</button>
     </div>
 
     <div class="stage" id="stage">
@@ -423,38 +423,38 @@
       <div class="pivot-tick top"></div>
       <div class="pivot-tick bottom"></div>
       <div class="word-row" id="wordRow">
-        <span class="empty-stage" id="emptyStage">Premi play per iniziare</span>
+        <span class="empty-stage" id="emptyStage">Press play to start</span>
       </div>
     </div>
 
     <div class="progress-wrap">
-      <input type="range" class="seek" id="seek" min="0" max="0" value="0" step="1" aria-label="Posizione nel testo">
+      <input type="range" class="seek" id="seek" min="0" max="0" value="0" step="1" aria-label="Position in text">
       <div class="time-row">
-        <span id="wordPos">0 / 0 parole</span>
+        <span id="wordPos">0 / 0 words</span>
         <span id="timeLeft">--:--</span>
       </div>
     </div>
 
     <div class="transport">
-      <button class="step-btn" id="back10" title="Indietro 15 parole" aria-label="Indietro">
+      <button class="step-btn" id="back10" title="Back 15 words" aria-label="Back">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 19 2 12 11 5 11 19"></polygon><polygon points="22 19 13 12 22 5 22 19"></polygon></svg>
       </button>
-      <button class="play-btn" id="playBtn" title="Play / Pausa" aria-label="Play">
+      <button class="play-btn" id="playBtn" title="Play / Pause" aria-label="Play">
         <svg id="playIcon" viewBox="0 0 24 24" fill="currentColor"><polygon points="6 3 20 12 6 21 6 3"></polygon></svg>
         <svg id="pauseIcon" viewBox="0 0 24 24" fill="currentColor" style="display:none;"><rect x="5" y="3" width="5" height="18"></rect><rect x="14" y="3" width="5" height="18"></rect></svg>
       </button>
-      <button class="step-btn" id="fwd10" title="Avanti 15 parole" aria-label="Avanti">
+      <button class="step-btn" id="fwd10" title="Forward 15 words" aria-label="Forward">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 19 22 12 13 5 13 19"></polygon><polygon points="2 19 11 12 2 5 2 19"></polygon></svg>
       </button>
     </div>
 
     <div class="controls">
       <div class="control">
-        <label>Velocità <span class="val" id="wpmVal">320 wpm</span></label>
+        <label>Speed <span class="val" id="wpmVal">320 wpm</span></label>
         <input type="range" id="wpmSlider" min="100" max="900" step="10" value="320">
       </div>
       <div class="control">
-        <label>Dimensione parola <span class="val" id="sizeVal">48px</span></label>
+        <label>Word size <span class="val" id="sizeVal">48px</span></label>
         <input type="range" id="sizeSlider" min="28" max="96" step="2" value="48">
       </div>
       <div class="control">
@@ -462,11 +462,11 @@
         <select id="fontSelect">
           <option value="font-serif" selected>Serif — Lora</option>
           <option value="font-sans">Sans — Inter</option>
-          <option value="font-mono">Monospaziato — Plex Mono</option>
+          <option value="font-mono">Monospace — Plex Mono</option>
         </select>
       </div>
       <div class="control">
-        <label>Parole per lampo</label>
+        <label>Words per flash</label>
         <div class="seg" id="chunkSeg">
           <button data-v="1" class="on" type="button">1</button>
           <button data-v="2" type="button">2</button>
@@ -475,7 +475,7 @@
       </div>
     </div>
 
-    <div class="hint"><kbd>spazio</kbd> play/pausa · <kbd>←</kbd> <kbd>→</kbd> salta 15 parole · <kbd>↑</kbd> <kbd>↓</kbd> velocità</div>
+    <div class="hint"><kbd>space</kbd> play/pause · <kbd>←</kbd> <kbd>→</kbd> skip 15 words · <kbd>↑</kbd> <kbd>↓</kbd> speed</div>
   </div>
 
 </div>
@@ -577,20 +577,20 @@
     var name = file.name || "documento";
     var lower = name.toLowerCase();
     dropzone.style.display = "none";
-    setStatus("Sto leggendo \u201c" + name + "\u201d\u2026");
+    setStatus("Reading \u201c" + name + "\u201d\u2026");
 
     var reader2 = new FileReader();
-    reader2.onerror = function(){ setStatus("Non sono riuscito a leggere il file.", true); dropzone.style.display=""; };
+    reader2.onerror = function(){ setStatus("Couldn't read the file.", true); dropzone.style.display=""; };
     reader2.onload = function(){
       var buf = reader2.result;
       if(lower.endsWith(".pdf")){
         extractPdf(buf).then(function(text){ onTextReady(text, name); })
-          .catch(function(err){ console.error(err); setStatus("Errore durante l'estrazione del PDF.", true); dropzone.style.display=""; });
+          .catch(function(err){ console.error(err); setStatus("Error extracting the PDF.", true); dropzone.style.display=""; });
       } else if(lower.endsWith(".epub")){
         extractEpub(buf).then(function(text){ onTextReady(text, name); })
-          .catch(function(err){ console.error(err); setStatus("Errore durante l'estrazione dell'EPUB.", true); dropzone.style.display=""; });
+          .catch(function(err){ console.error(err); setStatus("Error extracting the EPUB.", true); dropzone.style.display=""; });
       } else {
-        setStatus("Formato non riconosciuto. Carica un file .pdf o .epub.", true);
+        setStatus("Unrecognized format. Please upload a .pdf or .epub file.", true);
         dropzone.style.display = "";
       }
     };
@@ -600,7 +600,7 @@
   function onTextReady(text, name){
     var w = text.split(/\s+/).map(function(s){ return s.trim(); }).filter(Boolean);
     if(w.length === 0){
-      setStatus("Non ho trovato testo leggibile in questo file.", true);
+      setStatus("No readable text found in this file.", true);
       dropzone.style.display = "";
       return;
     }
@@ -624,7 +624,7 @@
       for(var i=1; i<=n; i++){
         (function(pageNum){
           chain = chain.then(function(){
-            setStatus("Estrazione testo\u2026 pagina " + pageNum + " di " + n);
+            setStatus("Extracting text\u2026 page " + pageNum + " of " + n);
             return pdf.getPage(pageNum).then(function(page){
               return page.getTextContent().then(function(content){
                 var strs = content.items.map(function(it){ return it.str; });
@@ -654,14 +654,14 @@
   function extractEpub(buf){
     return JSZip.loadAsync(buf).then(function(zip){
       var containerFile = zip.file("META-INF/container.xml");
-      if(!containerFile) throw new Error("container.xml mancante");
+      if(!containerFile) throw new Error("container.xml missing");
       return containerFile.async("text").then(function(containerXml){
         var doc = new DOMParser().parseFromString(containerXml, "application/xml");
         var rootfile = doc.getElementsByTagName("rootfile")[0];
         var opfPath = rootfile.getAttribute("full-path");
         var opfDir = opfPath.indexOf("/") >= 0 ? opfPath.slice(0, opfPath.lastIndexOf("/")) : "";
         var opfFile = zip.file(opfPath);
-        if(!opfFile) throw new Error("file OPF mancante");
+        if(!opfFile) throw new Error("OPF file missing");
         return opfFile.async("text").then(function(opfXml){
           var opfDoc = new DOMParser().parseFromString(opfXml, "application/xml");
           var manifestItems = {};
@@ -678,7 +678,7 @@
             if(!href) return;
             var fullPath = resolvePath(opfDir, href);
             chain = chain.then(function(){
-              setStatus("Estrazione testo\u2026 capitolo " + (i+1) + " di " + spineIds.length);
+              setStatus("Extracting text\u2026 chapter " + (i+1) + " of " + spineIds.length);
               var f = zip.file(fullPath);
               if(!f) return;
               return f.async("text").then(function(html){
@@ -726,7 +726,7 @@
     var unit = currentUnit();
     if(unit.length === 0){
       wordRow.classList.remove("grouped");
-      wordRow.innerHTML = '<span class="empty-stage">Fine del testo</span>';
+      wordRow.innerHTML = '<span class="empty-stage">End of text</span>';
       return;
     }
     wordRow.style.setProperty("--word-size", settings.size + "px");
@@ -753,12 +753,12 @@
 
   function updateProgress(){
     seek.value = idx;
-    wordPos.textContent = Math.min(idx+1, words.length) + " / " + words.length + " parole";
+    wordPos.textContent = Math.min(idx+1, words.length) + " / " + words.length + " words";
     var remaining = words.length - idx;
     var secs = (remaining / settings.wpm) * 60;
     var m = Math.floor(secs / 60);
     var s = Math.floor(secs % 60);
-    timeLeft.textContent = (m < 10 ? "0"+m : m) + ":" + (s < 10 ? "0"+s : s) + " rimanenti";
+    timeLeft.textContent = (m < 10 ? "0"+m : m) + ":" + (s < 10 ? "0"+s : s) + " remaining";
   }
 
   function scheduleNext(){
